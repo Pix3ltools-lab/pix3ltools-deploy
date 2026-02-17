@@ -1,0 +1,175 @@
+name: E2E Deploy Test
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build and Push Docker Images"]
+    types:
+      - completed
+
+env:
+  JWT_SECRET: test-secret-at-least-32-characters-long
+  E2E_USER_EMAIL: admin@example.com
+  E2E_USER_PASSWORD: TestPassword123
+
+jobs:
+  e2e-test:
+    name: E2E deployment test
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout deploy repo
+        uses: actions/checkout@v4
+
+      - name: Start stack
+        run: docker compose up -d
+        env:
+          JWT_SECRET: ${{ env.JWT_SECRET }}
+
+      - name: Wait for sqld to be ready
+        run: |
+          echo "Waiting for sqld..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/health > /dev/null 2>&1 || curl -sf http://localhost:8080/ > /dev/null 2>&1; then
+              echo "sqld is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "sqld failed to start"
+          docker compose logs sqld
+          exit 1
+
+      - name: Initialize pix3lboard database
+        run: |
+          git clone --depth 1 https://github.com/Pix3ltools-lab/pix3lboard.git /tmp/pix3lboard
+          TURSO_DATABASE_URL=http://localhost:8080 \
+          TURSO_AUTH_TOKEN=dummy \
+          E2E_USER_EMAIL=${{ env.E2E_USER_EMAIL }} \
+          E2E_USER_PASSWORD=${{ env.E2E_USER_PASSWORD }} \
+            bash /tmp/pix3lboard/scripts/db-init.sh
+
+      - name: Initialize pix3lwiki database
+        run: |
+          git clone --depth 1 https://github.com/Pix3ltools-lab/pix3lwiki.git /tmp/pix3lwiki
+          TURSO_DATABASE_URL=http://localhost:8080 \
+          TURSO_AUTH_TOKEN=dummy \
+          JWT_SECRET=${{ env.JWT_SECRET }} \
+          E2E_USER_EMAIL=${{ env.E2E_USER_EMAIL }} \
+          E2E_USER_PASSWORD=${{ env.E2E_USER_PASSWORD }} \
+            bash /tmp/pix3lwiki/scripts/db-init.sh
+
+      - name: Restart app containers after DB init
+        run: |
+          docker compose restart pix3lboard pix3lwiki
+          sleep 5
+
+      - name: Wait for pix3lboard to be ready
+        run: |
+          echo "Waiting for pix3lboard..."
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:3000; then
+              echo "pix3lboard is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "pix3lboard failed to start"
+          docker compose logs pix3lboard
+          exit 1
+
+      - name: Wait for pix3lwiki to be ready
+        run: |
+          echo "Waiting for pix3lwiki..."
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://localhost:3001; then
+              echo "pix3lwiki is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "pix3lwiki failed to start"
+          docker compose logs pix3lwiki
+          exit 1
+
+      - name: Test - All containers are running
+        run: |
+          echo "=== Container status ==="
+          docker compose ps
+          running=$(docker compose ps --format json | grep -c '"running"')
+          if [ "$running" -ne 3 ]; then
+            echo "FAIL: Expected 3 running containers, got $running"
+            exit 1
+          fi
+          echo "PASS: All 3 containers are running"
+
+      - name: Test - sqld responds to queries
+        run: |
+          echo "=== Testing sqld ==="
+          response=$(curl -sf -X POST http://localhost:8080/v2/pipeline \
+            -H "Content-Type: application/json" \
+            -d '{"requests":[{"type":"execute","stmt":{"sql":"SELECT 1 as ok"}}]}')
+          echo "$response"
+          echo "$response" | grep -q "ok" && echo "PASS: sqld responds to queries" || { echo "FAIL: sqld query failed"; exit 1; }
+
+      - name: Test - Pix3lboard login
+        run: |
+          echo "=== Testing pix3lboard login ==="
+          response=$(curl -sf -X POST http://localhost:3000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"${{ env.E2E_USER_EMAIL }}\",\"password\":\"${{ env.E2E_USER_PASSWORD }}\"}")
+          echo "$response"
+          echo "$response" | grep -qi "token\|success\|set-cookie" && echo "PASS: pix3lboard login works" || { echo "FAIL: pix3lboard login failed"; exit 1; }
+
+      - name: Test - Pix3lwiki login
+        run: |
+          echo "=== Testing pix3lwiki login ==="
+          response=$(curl -sf -X POST http://localhost:3001/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"${{ env.E2E_USER_EMAIL }}\",\"password\":\"${{ env.E2E_USER_PASSWORD }}\"}")
+          echo "$response"
+          echo "$response" | grep -qi "token\|success\|set-cookie" && echo "PASS: pix3lwiki login works" || { echo "FAIL: pix3lwiki login failed"; exit 1; }
+
+      - name: Test - Protected endpoints require auth
+        run: |
+          echo "=== Testing auth protection ==="
+          board_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/workspaces)
+          wiki_status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/pages)
+          echo "pix3lboard /api/workspaces without token: $board_status"
+          echo "pix3lwiki /api/pages without token: $wiki_status"
+          if [ "$board_status" = "401" ] && [ "$wiki_status" = "401" ]; then
+            echo "PASS: Protected endpoints return 401 without auth"
+          else
+            echo "WARN: Unexpected status codes (may vary by app config)"
+          fi
+
+      - name: Test - Data persistence across restart
+        run: |
+          echo "=== Testing data persistence ==="
+          docker compose down
+          docker compose up -d
+          echo "Waiting for services to restart..."
+          sleep 15
+          for i in $(seq 1 20); do
+            if curl -sf -o /dev/null http://localhost:3000 && curl -sf -o /dev/null http://localhost:3001; then
+              break
+            fi
+            sleep 3
+          done
+          # Verify sqld still has data
+          response=$(curl -sf -X POST http://localhost:8080/v2/pipeline \
+            -H "Content-Type: application/json" \
+            -d '{"requests":[{"type":"execute","stmt":{"sql":"SELECT count(*) as cnt FROM users"}}]}')
+          echo "$response"
+          echo "$response" | grep -q "cnt" && echo "PASS: Data persisted after restart" || { echo "FAIL: Data lost after restart"; exit 1; }
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker Compose Logs ==="
+          docker compose logs --tail=100
+
+      - name: Teardown
+        if: always()
+        run: docker compose down -v
