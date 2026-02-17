@@ -89,6 +89,24 @@ Images are built and published to GitHub Container Registry via the **Build and 
 3. Enter the git ref (tag or branch) for each app
 4. Images are pushed to `ghcr.io/pix3ltools-lab/pix3lboard` and `ghcr.io/pix3ltools-lab/pix3lwiki`
 
+## E2E Testing
+
+An automated end-to-end test verifies the full deployment stack. It runs automatically after a successful **Build and Push** workflow, or you can trigger it manually:
+
+1. Go to **Actions** → **E2E Deploy Test**
+2. Click **Run workflow**
+
+The test spins up the entire stack on the CI runner and checks:
+
+- All 3 containers start and stay running
+- sqld responds to SQL queries
+- Database initialization scripts complete successfully
+- Login works on both Pix3lBoard and Pix3lWiki
+- Protected API endpoints reject unauthenticated requests
+- Data persists across a `docker compose down` / `up` cycle
+
+If any step fails, container logs are collected automatically for debugging.
+
 ## Related Repos
 
 - [pix3lboard](https://github.com/Pix3ltools-lab/pix3lboard) — Kanban board source
