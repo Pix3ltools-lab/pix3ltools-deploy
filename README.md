@@ -2,6 +2,55 @@
 
 Docker deployment for the Pix3lTools stack: **Pix3lBoard** (Kanban) + **Pix3lWiki** (Wiki) + **sqld** (SQLite database).
 
+## Prerequisites
+
+### Docker
+
+**Linux:**
+```bash
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# Log out and back in for group changes to take effect
+```
+
+**macOS / Windows:**
+Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+Verify the installation:
+```bash
+docker --version
+docker compose version
+```
+
+### Node.js (required for database initialization)
+
+**Linux:**
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+**macOS:**
+```bash
+brew install node@20
+```
+
+**Windows:**
+Download the installer from [nodejs.org](https://nodejs.org/).
+
+Verify the installation:
+```bash
+node --version   # v20 or higher
+npm --version
+```
+
+### Git
+
+Git is required to clone the repositories. Install it from [git-scm.com](https://git-scm.com/) if not already available:
+```bash
+git --version
+```
+
 ## Quick Start
 
 ```bash
