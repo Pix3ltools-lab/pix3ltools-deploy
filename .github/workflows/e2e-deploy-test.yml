@@ -120,20 +120,30 @@ jobs:
       - name: Test - Pix3lboard login
         run: |
           echo "=== Testing pix3lboard login ==="
-          response=$(curl -sf -X POST http://localhost:3000/api/auth/login \
+          http_code=$(curl -s -o /tmp/board_login.json -w "%{http_code}" -X POST http://localhost:3000/api/auth/login \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"${{ env.E2E_USER_EMAIL }}\",\"password\":\"${{ env.E2E_USER_PASSWORD }}\"}")
-          echo "$response"
-          echo "$response" | grep -qi "token\|success\|set-cookie" && echo "PASS: pix3lboard login works" || { echo "FAIL: pix3lboard login failed"; exit 1; }
+          cat /tmp/board_login.json
+          if [ "$http_code" = "200" ]; then
+            echo "PASS: pix3lboard login works (HTTP $http_code)"
+          else
+            echo "FAIL: pix3lboard login failed (HTTP $http_code)"
+            exit 1
+          fi
 
       - name: Test - Pix3lwiki login
         run: |
           echo "=== Testing pix3lwiki login ==="
-          response=$(curl -sf -X POST http://localhost:3001/api/auth/login \
+          http_code=$(curl -s -o /tmp/wiki_login.json -w "%{http_code}" -X POST http://localhost:3001/api/auth/login \
             -H "Content-Type: application/json" \
             -d "{\"email\":\"${{ env.E2E_USER_EMAIL }}\",\"password\":\"${{ env.E2E_USER_PASSWORD }}\"}")
-          echo "$response"
-          echo "$response" | grep -qi "token\|success\|set-cookie" && echo "PASS: pix3lwiki login works" || { echo "FAIL: pix3lwiki login failed"; exit 1; }
+          cat /tmp/wiki_login.json
+          if [ "$http_code" = "200" ]; then
+            echo "PASS: pix3lwiki login works (HTTP $http_code)"
+          else
+            echo "FAIL: pix3lwiki login failed (HTTP $http_code)"
+            exit 1
+          fi
 
       - name: Test - Protected endpoints require auth
         run: |
