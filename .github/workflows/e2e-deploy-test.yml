@@ -44,21 +44,23 @@ jobs:
       - name: Initialize pix3lboard database
         run: |
           git clone --depth 1 https://github.com/Pix3ltools-lab/pix3lboard.git /tmp/pix3lboard
+          cd /tmp/pix3lboard
           TURSO_DATABASE_URL=http://localhost:8080 \
           TURSO_AUTH_TOKEN=dummy \
           E2E_USER_EMAIL=${{ env.E2E_USER_EMAIL }} \
           E2E_USER_PASSWORD=${{ env.E2E_USER_PASSWORD }} \
-            bash /tmp/pix3lboard/scripts/db-init.sh
+            bash scripts/db-init.sh
 
       - name: Initialize pix3lwiki database
         run: |
           git clone --depth 1 https://github.com/Pix3ltools-lab/pix3lwiki.git /tmp/pix3lwiki
+          cd /tmp/pix3lwiki
           TURSO_DATABASE_URL=http://localhost:8080 \
           TURSO_AUTH_TOKEN=dummy \
           JWT_SECRET=${{ env.JWT_SECRET }} \
           E2E_USER_EMAIL=${{ env.E2E_USER_EMAIL }} \
           E2E_USER_PASSWORD=${{ env.E2E_USER_PASSWORD }} \
-            bash /tmp/pix3lwiki/scripts/db-init.sh
+            bash scripts/db-init.sh
 
       - name: Restart app containers after DB init
         run: |
