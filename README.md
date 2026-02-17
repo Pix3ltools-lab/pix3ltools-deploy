@@ -51,7 +51,17 @@ Git is required to clone the repositories. Install it from [git-scm.com](https:/
 git --version
 ```
 
-## Quick Start
+## Quick Start (One-click)
+
+```bash
+git clone https://github.com/Pix3ltools-lab/pix3ltools-deploy.git
+cd pix3ltools-deploy
+./setup.sh
+```
+
+The script will check prerequisites, generate a secure `.env`, prompt for admin credentials, start the Docker stack, and initialize the databases automatically.
+
+## Manual Setup
 
 ```bash
 # 1. Clone this repo
