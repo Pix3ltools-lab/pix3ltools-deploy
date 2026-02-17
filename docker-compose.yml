@@ -1,0 +1,46 @@
+services:
+  sqld:
+    image: ghcr.io/tursodatabase/libsql-server:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - db-data:/var/lib/sqld
+    environment:
+      - SQLD_NODE=primary
+
+  pix3lboard:
+    image: ghcr.io/pix3ltools-lab/pix3lboard:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - sqld
+    volumes:
+      - blob-storage:/data/blob-storage
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_NAME=pix3lboard
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NEXT_PUBLIC_PIX3LWIKI_URL=http://localhost:3001
+      - TURSO_DATABASE_URL=http://sqld:8080
+      - TURSO_AUTH_TOKEN=
+      - JWT_SECRET=${JWT_SECRET}
+      - STORAGE_PROVIDER=local
+      - LOCAL_STORAGE_PATH=/data/blob-storage
+
+  pix3lwiki:
+    image: ghcr.io/pix3ltools-lab/pix3lwiki:latest
+    ports:
+      - "3001:3001"
+    depends_on:
+      - sqld
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_VERSION=1.2.0
+      - NEXT_PUBLIC_PIX3LBOARD_URL=http://localhost:3000
+      - TURSO_DATABASE_URL=http://sqld:8080
+      - TURSO_AUTH_TOKEN=
+      - JWT_SECRET=${JWT_SECRET}
+
+volumes:
+  db-data:
+  blob-storage:
