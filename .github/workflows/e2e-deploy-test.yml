@@ -45,6 +45,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/Pix3ltools-lab/pix3lboard.git /tmp/pix3lboard
           cd /tmp/pix3lboard
+          npm ci
           TURSO_DATABASE_URL=http://localhost:8080 \
           TURSO_AUTH_TOKEN=dummy \
           E2E_USER_EMAIL=${{ env.E2E_USER_EMAIL }} \
@@ -55,6 +56,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/Pix3ltools-lab/pix3lwiki.git /tmp/pix3lwiki
           cd /tmp/pix3lwiki
+          npm ci
           TURSO_DATABASE_URL=http://localhost:8080 \
           TURSO_AUTH_TOKEN=dummy \
           JWT_SECRET=${{ env.JWT_SECRET }} \
