@@ -15,8 +15,32 @@ echo "  Pix3lTools Deploy - One-click Setup"
 echo "========================================="
 echo ""
 
+# --- 0. Ensure enough memory (create swap if needed) ---
+TOTAL_MEM_MB=$(free -m | awk '/^Mem:/{print $2}')
+TOTAL_SWAP_MB=$(free -m | awk '/^Swap:/{print $2}')
+TOTAL_AVAILABLE_MB=$(( TOTAL_MEM_MB + TOTAL_SWAP_MB ))
+
+if [ "$TOTAL_AVAILABLE_MB" -lt 1800 ]; then
+  echo "[0/8] Low memory detected (${TOTAL_MEM_MB}MB RAM, ${TOTAL_SWAP_MB}MB swap)."
+  if [ ! -f /swapfile ]; then
+    echo "  Creating 1GB swapfile..."
+    if fallocate -l 1G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=1024 status=none; then
+      chmod 600 /swapfile
+      mkswap /swapfile > /dev/null
+      swapon /swapfile
+      echo "  Swap enabled."
+    else
+      echo "  WARNING: Could not create swap (try running as root). npm ci may be killed on low RAM."
+    fi
+  else
+    echo "  /swapfile already exists, enabling..."
+    swapon /swapfile 2>/dev/null || true
+    echo "  Swap enabled."
+  fi
+fi
+
 # --- 1. Check prerequisites ---
-echo "[1/7] Checking prerequisites..."
+echo "[1/8] Checking prerequisites..."
 
 missing=()
 for cmd in docker git node npm curl; do
@@ -39,7 +63,7 @@ fi
 echo "  All prerequisites found."
 
 # --- 2. Create .env if missing ---
-echo "[2/7] Configuring environment..."
+echo "[2/8] Configuring environment..."
 
 if [ ! -f "$SCRIPT_DIR/.env" ]; then
   JWT_SECRET=$(openssl rand -base64 48)
@@ -50,7 +74,7 @@ else
 fi
 
 # --- 3. Prompt for admin credentials ---
-echo "[3/7] Setting up admin account..."
+echo "[3/8] Setting up admin account..."
 echo ""
 
 read -rp "  Admin email [admin@example.com]: " ADMIN_EMAIL
@@ -75,7 +99,7 @@ done
 echo ""
 
 # --- 4. Start Docker Compose stack ---
-echo "[4/7] Starting Docker Compose stack..."
+echo "[4/8] Starting Docker Compose stack..."
 
 cd "$SCRIPT_DIR"
 docker compose up -d
@@ -83,7 +107,7 @@ docker compose up -d
 echo "  Containers started."
 
 # --- 5. Wait for sqld ---
-echo "[5/7] Waiting for sqld to be ready..."
+echo "[5/8] Waiting for sqld to be ready..."
 
 for i in $(seq 1 30); do
   if curl -sf "$TURSO_URL/health" > /dev/null 2>&1 || \
@@ -101,7 +125,7 @@ for i in $(seq 1 30); do
 done
 
 # --- 6. Initialize databases ---
-echo "[6/7] Initializing databases (this may take a minute)..."
+echo "[6/8] Initializing databases (this may take a minute)..."
 
 # Load JWT_SECRET for pix3lwiki init
 source "$SCRIPT_DIR/.env"
@@ -125,7 +149,7 @@ TURSO_DATABASE_URL="$TURSO_URL" TURSO_AUTH_TOKEN="$TURSO_TOKEN" \
   E2E_USER_EMAIL="$ADMIN_EMAIL" E2E_USER_PASSWORD="$ADMIN_PASSWORD" \
   bash scripts/db-init.sh
 
-# --- 7. Done ---
+# --- 7/8. Done ---
 cd "$SCRIPT_DIR"
 
 echo ""
