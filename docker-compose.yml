@@ -41,6 +41,16 @@ services:
       - TURSO_AUTH_TOKEN=
       - JWT_SECRET=${JWT_SECRET}
 
+  watchtower:
+    image: containrrr/watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=3600
+      - WATCHTOWER_INCLUDE_STOPPED=false
+
 volumes:
   db-data:
   blob-storage:
