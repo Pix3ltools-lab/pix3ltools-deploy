@@ -51,7 +51,9 @@ Git is required to clone the repositories. Install it from [git-scm.com](https:/
 git --version
 ```
 
-## Quick Start (One-click)
+## Quick Start
+
+### Local machine (WSL, macOS, Linux)
 
 ```bash
 git clone https://github.com/Pix3ltools-lab/pix3ltools-deploy.git
@@ -59,7 +61,26 @@ cd pix3ltools-deploy
 ./setup.sh
 ```
 
-The script will check prerequisites, generate a secure `.env`, prompt for admin credentials, start the Docker stack, and initialize the databases automatically.
+`setup.sh` checks prerequisites, generates a secure `.env`, prompts for admin credentials, starts the Docker stack, and initializes the databases automatically.
+
+Open in browser: `http://localhost:3000` (Pix3lBoard) and `http://localhost:3001` (Pix3lWiki).
+
+### VPS / Remote server
+
+```bash
+git clone https://github.com/Pix3ltools-lab/pix3ltools-deploy.git
+cd pix3ltools-deploy
+./setup.sh
+./setup-https.sh
+```
+
+HTTPS is required on remote servers: without it, browser security policy blocks authentication cookies and data is never persisted. `setup-https.sh` configures Traefik as a reverse proxy with automatic Let's Encrypt certificates.
+
+`setup-https.sh` will ask:
+1. **Domain type** — custom domain (e.g. `board.example.com`) or [sslip.io](https://sslip.io) (no domain needed, derives one from the server IP automatically)
+2. **Email** — for Let's Encrypt certificate notifications
+
+It then generates a `docker-compose.override.yml` with the Traefik configuration and restarts the stack. Certificates are issued automatically on first access.
 
 ## Manual Setup
 
@@ -101,6 +122,9 @@ TURSO_DATABASE_URL=http://localhost:8080 TURSO_AUTH_TOKEN=dummy JWT_SECRET="$JWT
 | pix3lboard | 3000 | Kanban board with drag & drop, calendar, analytics |
 | pix3lwiki | 3001 | Wiki with markdown editor, versioning, categories |
 | sqld | 8080 | LibSQL database server (SQLite compatible) |
+| watchtower | — | Checks for updated images every hour and redeploys automatically |
+
+On VPS deployments (after running `setup-https.sh`), a `traefik` container is also added. It handles HTTPS termination and routes traffic from ports 80/443 to the apps.
 
 ## Environment Variables
 
@@ -110,11 +134,12 @@ TURSO_DATABASE_URL=http://localhost:8080 TURSO_AUTH_TOKEN=dummy JWT_SECRET="$JWT
 
 ## Updating
 
-```bash
-# Pull latest images
-docker compose pull
+Container images are updated automatically by **Watchtower**, which checks for new versions every hour and redeploys changed containers without manual intervention.
 
-# Restart with new images
+To update manually:
+
+```bash
+docker compose pull
 docker compose up -d
 ```
 
