@@ -102,11 +102,11 @@ jobs:
           echo "=== Container status ==="
           docker compose ps
           running=$(docker compose ps --format json | grep -c '"running"')
-          if [ "$running" -ne 3 ]; then
-            echo "FAIL: Expected 3 running containers, got $running"
+          if [ "$running" -ne 4 ]; then
+            echo "FAIL: Expected 4 running containers, got $running"
             exit 1
           fi
-          echo "PASS: All 3 containers are running"
+          echo "PASS: All 4 containers are running"
 
       - name: Test - sqld responds to queries
         run: |
