@@ -97,7 +97,7 @@ services:
   pix3lboard:
     environment:
       NEXT_PUBLIC_APP_URL: "https://$BOARD_DOMAIN"
-      NEXT_PUBLIC_PIX3LWIKI_URL: "https://$WIKI_DOMAIN"
+      PIX3LWIKI_URL: "https://$WIKI_DOMAIN"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.board.rule=Host(\`$BOARD_DOMAIN\`)"
@@ -107,7 +107,7 @@ services:
 
   pix3lwiki:
     environment:
-      NEXT_PUBLIC_PIX3LBOARD_URL: "https://$BOARD_DOMAIN"
+      PIX3LBOARD_URL: "https://$BOARD_DOMAIN"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wiki.rule=Host(\`$WIKI_DOMAIN\`)"
