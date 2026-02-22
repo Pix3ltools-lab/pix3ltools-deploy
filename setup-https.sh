@@ -134,6 +134,20 @@ fi
 cd "$SCRIPT_DIR"
 docker compose up -d
 
+# --- Smoke test: verify HTTP → HTTPS redirect ---
+echo ""
+echo "  Waiting for Traefik to start..."
+sleep 5
+
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://$BOARD_DOMAIN" 2>/dev/null || echo "000")
+if [[ "$HTTP_STATUS" == "301" || "$HTTP_STATUS" == "302" ]]; then
+  echo "  HTTP→HTTPS redirect: OK (HTTP $HTTP_STATUS)"
+else
+  echo "  WARNING: HTTP redirect check returned $HTTP_STATUS (expected 301/302)."
+  echo "  Traefik may still be starting. Verify manually:"
+  echo "    curl -I http://$BOARD_DOMAIN"
+fi
+
 echo ""
 echo "========================================="
 echo "  HTTPS setup complete!"

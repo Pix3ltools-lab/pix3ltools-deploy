@@ -72,6 +72,8 @@ if [ ! -f "$SCRIPT_DIR/.env" ]; then
 else
   echo "  .env already exists, keeping existing configuration"
 fi
+chmod 600 "$SCRIPT_DIR/.env"
+echo "  Secured .env permissions (600)"
 
 # --- 3. Prompt for admin credentials ---
 echo "[3/8] Setting up admin account..."
