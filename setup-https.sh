@@ -103,7 +103,12 @@ services:
       - "traefik.http.routers.board.rule=Host(\`$BOARD_DOMAIN\`)"
       - "traefik.http.routers.board.entrypoints=websecure"
       - "traefik.http.routers.board.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.board.middlewares=ratelimit"
       - "traefik.http.services.board.loadbalancer.server.port=3000"
+      # Global rate limit: 100 req/s average, 200 burst per IP
+      # Mitigates DDoS and Next.js Image Optimizer abuse (/_next/image DoS CVE)
+      - "traefik.http.middlewares.ratelimit.ratelimit.average=100"
+      - "traefik.http.middlewares.ratelimit.ratelimit.burst=200"
 
   pix3lwiki:
     environment:
@@ -113,6 +118,7 @@ services:
       - "traefik.http.routers.wiki.rule=Host(\`$WIKI_DOMAIN\`)"
       - "traefik.http.routers.wiki.entrypoints=websecure"
       - "traefik.http.routers.wiki.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.wiki.middlewares=ratelimit"
       - "traefik.http.services.wiki.loadbalancer.server.port=3001"
 
 volumes:
