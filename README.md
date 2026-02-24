@@ -72,6 +72,7 @@ git clone https://github.com/Pix3ltools-lab/pix3ltools-deploy.git
 cd pix3ltools-deploy
 ./setup.sh
 ./setup-https.sh
+sudo ./setup-fail2ban.sh
 ```
 
 HTTPS is required on remote servers: without it, browser security policy blocks authentication cookies and data is never persisted. `setup-https.sh` configures Traefik as a reverse proxy with automatic Let's Encrypt certificates.
@@ -80,7 +81,11 @@ HTTPS is required on remote servers: without it, browser security policy blocks 
 1. **Domain type** — custom domain (e.g. `board.example.com`) or [sslip.io](https://sslip.io) (no domain needed, derives one from the server IP automatically)
 2. **Email** — for Let's Encrypt certificate notifications
 
-It then generates a `docker-compose.override.yml` with the Traefik configuration and restarts the stack. Certificates are issued automatically on first access.
+It then generates a `docker-compose.override.yml` with the Traefik configuration and restarts the stack. Certificates are issued automatically on first access. Access logs are written to `./logs/access.log` on the host.
+
+`setup-fail2ban.sh` installs and configures fail2ban to read Traefik access logs and automatically ban IPs that attempt brute force login or aggressive scanning:
+- 5 failed logins in 5 minutes → banned for 1 hour
+- 50 4xx errors in 1 minute → banned for 10 minutes
 
 ## Manual Setup
 
@@ -122,7 +127,7 @@ TURSO_DATABASE_URL=http://localhost:8080 TURSO_AUTH_TOKEN=dummy JWT_SECRET="$JWT
 | pix3lboard | 3000 | Kanban board with drag & drop, calendar, analytics |
 | pix3lwiki | 3001 | Wiki with markdown editor, versioning, categories |
 | sqld | 8080 | LibSQL database server (SQLite compatible) |
-| watchtower | — | Checks for updated images every hour and redeploys automatically |
+| watchtower | — | Checks for updated images every hour and notifies (monitor-only, does not auto-deploy) |
 
 On VPS deployments (after running `setup-https.sh`), a `traefik` container is also added. It handles HTTPS termination and routes traffic from ports 80/443 to the apps.
 
@@ -134,7 +139,7 @@ On VPS deployments (after running `setup-https.sh`), a `traefik` container is al
 
 ## Updating
 
-Container images are updated automatically by **Watchtower**, which checks for new versions every hour and redeploys changed containers without manual intervention.
+**Watchtower** checks for updated images every hour. It runs in monitor-only mode and does not apply updates automatically — check its logs to see if a new image is available, then update manually.
 
 To update manually:
 
