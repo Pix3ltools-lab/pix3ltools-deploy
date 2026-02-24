@@ -131,7 +131,8 @@ volumes:
   letsencrypt:
 EOF
 
-echo "  Created docker-compose.override.yml"
+chmod 600 "$SCRIPT_DIR/docker-compose.override.yml"
+echo "  Created docker-compose.override.yml (permissions: 600)"
 
 # --- 4. Firewall + restart ---
 echo "[4/4] Applying configuration..."
