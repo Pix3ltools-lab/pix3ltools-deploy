@@ -22,10 +22,11 @@ echo ""
 
 case "$DOMAIN_CHOICE" in
   1)
-    read -rp "  Pix3lBoard domain (e.g. board.example.com): " BOARD_DOMAIN
-    read -rp "  Pix3lWiki domain  (e.g. wiki.example.com):  " WIKI_DOMAIN
+    read -rp "  Pix3lBoard domain  (e.g. board.example.com):  " BOARD_DOMAIN
+    read -rp "  Pix3lWiki domain   (e.g. wiki.example.com):   " WIKI_DOMAIN
+    read -rp "  Pix3lPrompt domain (e.g. prompt.example.com): " PROMPT_DOMAIN
     echo ""
-    echo "  Important: DNS A records for both domains must point to this server's IP"
+    echo "  Important: DNS A records for all three domains must point to this server's IP"
     echo "  before continuing. Let's Encrypt will fail if DNS is not propagated."
     echo ""
     read -rp "  DNS is configured. Continue? [y/N]: " DNS_OK
@@ -46,8 +47,10 @@ case "$DOMAIN_CHOICE" in
     fi
     BOARD_DOMAIN="board.${SERVER_IP}.sslip.io"
     WIKI_DOMAIN="wiki.${SERVER_IP}.sslip.io"
-    echo "  Pix3lBoard: https://$BOARD_DOMAIN"
-    echo "  Pix3lWiki:  https://$WIKI_DOMAIN"
+    PROMPT_DOMAIN="prompt.${SERVER_IP}.sslip.io"
+    echo "  Pix3lBoard:   https://$BOARD_DOMAIN"
+    echo "  Pix3lWiki:    https://$WIKI_DOMAIN"
+    echo "  Pix3lPrompt:  https://$PROMPT_DOMAIN"
     echo ""
     ;;
   *)
@@ -104,6 +107,7 @@ services:
     environment:
       NEXT_PUBLIC_APP_URL: "https://$BOARD_DOMAIN"
       PIX3LWIKI_URL: "https://$WIKI_DOMAIN"
+      PIX3LPROMPT_URL: "https://$PROMPT_DOMAIN"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.board.rule=Host(\`$BOARD_DOMAIN\`)"
@@ -126,6 +130,15 @@ services:
       - "traefik.http.routers.wiki.tls.certresolver=letsencrypt"
       - "traefik.http.routers.wiki.middlewares=ratelimit"
       - "traefik.http.services.wiki.loadbalancer.server.port=3001"
+
+  pix3lprompt:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prompt.rule=Host(\`$PROMPT_DOMAIN\`)"
+      - "traefik.http.routers.prompt.entrypoints=websecure"
+      - "traefik.http.routers.prompt.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.prompt.middlewares=ratelimit"
+      - "traefik.http.services.prompt.loadbalancer.server.port=3002"
 
 volumes:
   letsencrypt:
@@ -166,8 +179,9 @@ echo "========================================="
 echo "  HTTPS setup complete!"
 echo "========================================="
 echo ""
-echo "  Pix3lBoard: https://$BOARD_DOMAIN"
-echo "  Pix3lWiki:  https://$WIKI_DOMAIN"
+echo "  Pix3lBoard:   https://$BOARD_DOMAIN"
+echo "  Pix3lWiki:    https://$WIKI_DOMAIN"
+echo "  Pix3lPrompt:  https://$PROMPT_DOMAIN"
 echo ""
 echo "  Certificates will be issued automatically on first access."
 echo "  Watch Traefik logs: docker compose logs traefik -f"

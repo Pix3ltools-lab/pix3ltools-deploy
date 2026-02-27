@@ -26,6 +26,14 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - STORAGE_PROVIDER=local
       - LOCAL_STORAGE_PATH=/data/blob-storage
+      - PIX3LPROMPT_URL=http://localhost:3002
+
+  pix3lprompt:
+    image: ghcr.io/pix3ltools-lab/pix3lprompt:latest
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
 
   pix3lwiki:
     image: ghcr.io/pix3ltools-lab/pix3lwiki:latest

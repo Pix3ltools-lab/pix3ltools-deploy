@@ -1,6 +1,6 @@
 # Pix3lTools Deploy
 
-Docker deployment for the Pix3lTools stack: **Pix3lBoard** (Kanban) + **Pix3lWiki** (Wiki) + **sqld** (SQLite database).
+Docker deployment for the Pix3lTools stack: **Pix3lBoard** (Kanban) + **Pix3lWiki** (Wiki) + **Pix3lPrompt** (AI prompt editor) + **sqld** (SQLite database).
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ cd pix3ltools-deploy
 
 `setup.sh` checks prerequisites, generates a secure `.env`, prompts for admin credentials, starts the Docker stack, and initializes the databases automatically.
 
-Open in browser: `http://localhost:3000` (Pix3lBoard) and `http://localhost:3001` (Pix3lWiki).
+Open in browser: `http://localhost:3000` (Pix3lBoard), `http://localhost:3001` (Pix3lWiki), `http://localhost:3002` (Pix3lPrompt).
 
 ### VPS / Remote server
 
@@ -79,7 +79,8 @@ HTTPS is required on remote servers: without it, browser security policy blocks 
 
 `setup-https.sh` will ask:
 1. **Domain type** — custom domain (e.g. `board.example.com`) or [sslip.io](https://sslip.io) (no domain needed, derives one from the server IP automatically)
-2. **Email** — for Let's Encrypt certificate notifications
+2. **Domains** — one for each app (Pix3lBoard, Pix3lWiki, Pix3lPrompt)
+3. **Email** — for Let's Encrypt certificate notifications
 
 It then generates a `docker-compose.override.yml` with the Traefik configuration and restarts the stack. Certificates are issued automatically on first access. Access logs are written to `./logs/access.log` on the host.
 
@@ -116,8 +117,9 @@ TURSO_DATABASE_URL=http://localhost:8080 TURSO_AUTH_TOKEN=dummy JWT_SECRET="$JWT
   bash /tmp/pix3lwiki/scripts/db-init.sh
 
 # 5. Open in browser
-# Pix3lBoard: http://localhost:3000
-# Pix3lWiki:  http://localhost:3001
+# Pix3lBoard:   http://localhost:3000
+# Pix3lWiki:    http://localhost:3001
+# Pix3lPrompt:  http://localhost:3002
 ```
 
 ## Services
@@ -126,6 +128,7 @@ TURSO_DATABASE_URL=http://localhost:8080 TURSO_AUTH_TOKEN=dummy JWT_SECRET="$JWT
 |---------|------|-------------|
 | pix3lboard | 3000 | Kanban board with drag & drop, calendar, analytics |
 | pix3lwiki | 3001 | Wiki with markdown editor, versioning, categories |
+| pix3lprompt | 3002 | AI prompt editor — PWA, 100% client-side, no database |
 | sqld | 8080 | LibSQL database server (SQLite compatible) |
 | watchtower | — | Checks for updated images every hour and notifies (monitor-only, does not auto-deploy) |
 
@@ -176,7 +179,7 @@ Images are built and published to GitHub Container Registry via the **Build and 
 1. Go to **Actions** → **Build and Push Docker Images**
 2. Click **Run workflow**
 3. Enter the git ref (tag or branch) for each app
-4. Images are pushed to `ghcr.io/pix3ltools-lab/pix3lboard` and `ghcr.io/pix3ltools-lab/pix3lwiki`
+4. Images are pushed to `ghcr.io/pix3ltools-lab/pix3lboard`, `ghcr.io/pix3ltools-lab/pix3lwiki` and `ghcr.io/pix3ltools-lab/pix3lprompt`
 
 ## E2E Testing
 
@@ -187,10 +190,11 @@ An automated end-to-end test verifies the full deployment stack. It runs automat
 
 The test spins up the entire stack on the CI runner and checks:
 
-- All 3 containers start and stay running
+- All containers start and stay running
 - sqld responds to SQL queries
 - Database initialization scripts complete successfully
 - Login works on both Pix3lBoard and Pix3lWiki
+- Pix3lPrompt is reachable on port 3002
 - Protected API endpoints reject unauthenticated requests
 - Data persists across a `docker compose down` / `up` cycle
 
@@ -200,3 +204,4 @@ If any step fails, container logs are collected automatically for debugging.
 
 - [pix3lboard](https://github.com/Pix3ltools-lab/pix3lboard) — Kanban board source
 - [pix3lwiki](https://github.com/Pix3ltools-lab/pix3lwiki) — Wiki source
+- [pix3lprompt](https://github.com/Pix3ltools-lab/pix3lprompt) — AI prompt editor source
