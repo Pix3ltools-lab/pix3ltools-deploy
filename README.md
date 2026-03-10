@@ -1,6 +1,6 @@
 # Pix3lTools Deploy
 
-Docker deployment for the Pix3lTools stack: **Pix3lBoard** (Kanban) + **Pix3lWiki** (Wiki) + **Pix3lPrompt** (AI prompt editor) + **sqld** (SQLite database).
+Docker deployment for the Pix3lTools stack: **Pix3lBoard** (Kanban) + **Pix3lWiki** (Wiki) + **Pix3lPrompt** (AI prompt editor) + **Pix3lMCP** (MCP server for AI assistants) + **sqld** (SQLite database).
 
 ## Prerequisites
 
@@ -63,7 +63,7 @@ cd pix3ltools-deploy
 
 `setup.sh` checks prerequisites, generates a secure `.env`, prompts for admin credentials, starts the Docker stack, and initializes the databases automatically.
 
-Open in browser: `http://localhost:3000` (Pix3lBoard), `http://localhost:3001` (Pix3lWiki), `http://localhost:3002` (Pix3lPrompt).
+Open in browser: `http://localhost:3000` (Pix3lBoard), `http://localhost:3001` (Pix3lWiki), `http://localhost:3002` (Pix3lPrompt), `http://localhost:3010` (Pix3lMCP).
 
 ### VPS / Remote server
 
@@ -79,7 +79,7 @@ HTTPS is required on remote servers: without it, browser security policy blocks 
 
 `setup-https.sh` will ask:
 1. **Domain type** — custom domain (e.g. `board.example.com`) or [sslip.io](https://sslip.io) (no domain needed, derives one from the server IP automatically)
-2. **Domains** — one for each app (Pix3lBoard, Pix3lWiki, Pix3lPrompt)
+2. **Domains** — one for each app (Pix3lBoard, Pix3lWiki, Pix3lPrompt, Pix3lMCP)
 3. **Email** — for Let's Encrypt certificate notifications
 
 It then generates a `docker-compose.override.yml` with the Traefik configuration and restarts the stack. Certificates are issued automatically on first access. Access logs are written to `./logs/access.log` on the host.
@@ -129,6 +129,7 @@ TURSO_DATABASE_URL=http://localhost:8080 TURSO_AUTH_TOKEN=dummy JWT_SECRET="$JWT
 | pix3lboard | 3000 | Kanban board with drag & drop, calendar, analytics |
 | pix3lwiki | 3001 | Wiki with markdown editor, versioning, categories |
 | pix3lprompt | 3002 | AI prompt editor — PWA, 100% client-side, no database |
+| pix3lmcp | 3010 | MCP server — exposes pix3lboard via Model Context Protocol for AI assistants (Claude, etc.) |
 | sqld | 8080 | LibSQL database server (SQLite compatible) |
 | watchtower | — | Checks for updated images every hour and notifies (monitor-only, does not auto-deploy) |
 
@@ -139,6 +140,9 @@ On VPS deployments (after running `setup-https.sh`), a `traefik` container is al
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `JWT_SECRET` | Shared secret for JWT authentication (min 32 chars) | Yes |
+| `PIX3LBOARD_MCP_EMAIL` | pix3lboard account email used by pix3lmcp to authenticate | Yes |
+| `PIX3LBOARD_MCP_PASSWORD` | pix3lboard account password used by pix3lmcp | Yes |
+| `PIX3LBOARD_MCP_WORKSPACE_IDS` | Comma-separated workspace IDs exposed via MCP (leave empty to configure later) | No |
 
 ## Updating
 
@@ -179,7 +183,7 @@ Images are built and published to GitHub Container Registry via the **Build and 
 1. Go to **Actions** → **Build and Push Docker Images**
 2. Click **Run workflow**
 3. Enter the git ref (tag or branch) for each app
-4. Images are pushed to `ghcr.io/pix3ltools-lab/pix3lboard`, `ghcr.io/pix3ltools-lab/pix3lwiki` and `ghcr.io/pix3ltools-lab/pix3lprompt`
+4. Images are pushed to `ghcr.io/pix3ltools-lab/pix3lboard`, `ghcr.io/pix3ltools-lab/pix3lwiki`, `ghcr.io/pix3ltools-lab/pix3lprompt` and `ghcr.io/pix3ltools-lab/pix3lmcp`
 
 ## E2E Testing
 
@@ -205,3 +209,4 @@ If any step fails, container logs are collected automatically for debugging.
 - [pix3lboard](https://github.com/Pix3ltools-lab/pix3lboard) — Kanban board source
 - [pix3lwiki](https://github.com/Pix3ltools-lab/pix3lwiki) — Wiki source
 - [pix3lprompt](https://github.com/Pix3ltools-lab/pix3lprompt) — AI prompt editor source
+- [pix3lmcp](https://github.com/Pix3ltools-lab/pix3lmcp) — MCP server source
