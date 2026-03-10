@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-03-10
+
+### Added
+
+- **Pix3lMCP service** — Added `pix3lmcp` (MCP server for pix3lboard REST API v1) to the Docker Compose stack on port 3010; depends on `pix3lboard`
+- **MCP credentials in `setup.sh`** — New interactive step `[4/9]` collects MCP account email, password and workspace IDs; variables are written to `.env` with upsert logic (safe to re-run)
+- **MCP domain in `setup-https.sh`** — Prompts for a dedicated MCP domain (custom or sslip.io auto-generated); adds `pix3lmcp` Traefik router with TLS and rate-limit middleware to the generated `docker-compose.override.yml`; prints `claude mcp add` registration command in the summary
+- **MCP health check in `smoke-test.sh`** — New check on `GET /api/health` (port 3010); accepts optional second positional argument `[mcp_url]`
+- **`pix3lmcp` in CI workflow** — `build-and-push.yml` now includes a `pix3lmcp_ref` input and a parallel `build-pix3lmcp` job that pushes to `ghcr.io/pix3ltools-lab/pix3lmcp`
+
+### Changed
+
+- **`setup.sh` step numbering** — All steps renumbered from `/8` to `/9` to accommodate the new MCP credentials step
+- **README** — Updated to document pix3lmcp in the intro, Quick Start URLs, services table, environment variables, building images section and related repos
+
+---
+
 ## [1.0.0] - 2026-02-27
 
 ### Added
