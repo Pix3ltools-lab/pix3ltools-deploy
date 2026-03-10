@@ -40,7 +40,7 @@ if [ "$TOTAL_AVAILABLE_MB" -lt 1800 ]; then
 fi
 
 # --- 1. Check prerequisites ---
-echo "[1/8] Checking prerequisites..."
+echo "[1/9] Checking prerequisites..."
 
 missing=()
 for cmd in docker git node npm curl; do
@@ -63,7 +63,7 @@ fi
 echo "  All prerequisites found."
 
 # --- 2. Create .env if missing ---
-echo "[2/8] Configuring environment..."
+echo "[2/9] Configuring environment..."
 
 if [ ! -f "$SCRIPT_DIR/.env" ]; then
   JWT_SECRET=$(openssl rand -base64 48)
@@ -76,7 +76,7 @@ chmod 600 "$SCRIPT_DIR/.env"
 echo "  Secured .env permissions (600)"
 
 # --- 3. Prompt for admin credentials ---
-echo "[3/8] Setting up admin account..."
+echo "[3/9] Setting up admin account..."
 echo ""
 
 read -rp "  Admin email [admin@example.com]: " ADMIN_EMAIL
@@ -100,16 +100,44 @@ done
 
 echo ""
 
-# --- 4. Start Docker Compose stack ---
-echo "[4/8] Starting Docker Compose stack..."
+# --- 4. Prompt for MCP account credentials ---
+echo "[4/9] Setting up pix3lmcp credentials..."
+echo ""
+echo "  pix3lmcp needs a pix3lboard account to access the REST API."
+echo "  You can use the same admin account or create a dedicated one later."
+echo "  Note: if you use a separate account, it must be approved by an admin after setup."
+echo ""
+
+read -rp "  MCP account email [${ADMIN_EMAIL}]: " MCP_EMAIL
+MCP_EMAIL=${MCP_EMAIL:-$ADMIN_EMAIL}
+
+read -rsp "  MCP account password: " MCP_PASSWORD
+echo ""
+
+read -rp "  Workspace IDs for MCP (comma-separated, leave empty to configure later): " MCP_WORKSPACE_IDS
+echo ""
+
+# Write MCP vars to .env only if not already present
+append_env_if_missing() {
+  local key="$1" value="$2"
+  if ! grep -q "^${key}=" "$SCRIPT_DIR/.env" 2>/dev/null; then
+    echo "${key}=${value}" >> "$SCRIPT_DIR/.env"
+  fi
+}
+append_env_if_missing "PIX3LBOARD_MCP_EMAIL" "$MCP_EMAIL"
+append_env_if_missing "PIX3LBOARD_MCP_PASSWORD" "$MCP_PASSWORD"
+append_env_if_missing "PIX3LBOARD_MCP_WORKSPACE_IDS" "$MCP_WORKSPACE_IDS"
+
+# --- 5. Start Docker Compose stack ---
+echo "[5/9] Starting Docker Compose stack..."
 
 cd "$SCRIPT_DIR"
 docker compose up -d
 
 echo "  Containers started."
 
-# --- 5. Wait for sqld ---
-echo "[5/8] Waiting for sqld to be ready..."
+# --- 6. Wait for sqld ---
+echo "[6/9] Waiting for sqld to be ready..."
 
 for i in $(seq 1 30); do
   if curl -sf "$TURSO_URL/health" > /dev/null 2>&1 || \
@@ -127,7 +155,7 @@ for i in $(seq 1 30); do
 done
 
 # --- 6. Initialize databases ---
-echo "[6/8] Initializing databases (this may take a minute)..."
+echo "[7/9] Initializing databases (this may take a minute)..."
 
 # Load JWT_SECRET for pix3lwiki init
 source "$SCRIPT_DIR/.env"
@@ -151,7 +179,7 @@ TURSO_DATABASE_URL="$TURSO_URL" TURSO_AUTH_TOKEN="$TURSO_TOKEN" \
   E2E_USER_EMAIL="$ADMIN_EMAIL" E2E_USER_PASSWORD="$ADMIN_PASSWORD" \
   bash scripts/db-init.sh
 
-# --- 7/8. Done ---
+# --- 8/9. Done ---
 cd "$SCRIPT_DIR"
 
 echo ""
@@ -162,6 +190,7 @@ echo ""
 echo "  Pix3lBoard:   http://localhost:3000"
 echo "  Pix3lWiki:    http://localhost:3001"
 echo "  Pix3lPrompt:  http://localhost:3002"
+echo "  Pix3lMCP:     http://localhost:3010"
 echo ""
 echo "  Login with:  $ADMIN_EMAIL"
 echo ""

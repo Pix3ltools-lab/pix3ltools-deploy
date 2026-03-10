@@ -25,8 +25,9 @@ case "$DOMAIN_CHOICE" in
     read -rp "  Pix3lBoard domain  (e.g. board.example.com):  " BOARD_DOMAIN
     read -rp "  Pix3lWiki domain   (e.g. wiki.example.com):   " WIKI_DOMAIN
     read -rp "  Pix3lPrompt domain (e.g. prompt.example.com): " PROMPT_DOMAIN
+    read -rp "  Pix3lMCP domain    (e.g. mcp.example.com):    " MCP_DOMAIN
     echo ""
-    echo "  Important: DNS A records for all three domains must point to this server's IP"
+    echo "  Important: DNS A records for all four domains must point to this server's IP"
     echo "  before continuing. Let's Encrypt will fail if DNS is not propagated."
     echo ""
     read -rp "  DNS is configured. Continue? [y/N]: " DNS_OK
@@ -48,9 +49,11 @@ case "$DOMAIN_CHOICE" in
     BOARD_DOMAIN="board.${SERVER_IP}.sslip.io"
     WIKI_DOMAIN="wiki.${SERVER_IP}.sslip.io"
     PROMPT_DOMAIN="prompt.${SERVER_IP}.sslip.io"
+    MCP_DOMAIN="mcp.${SERVER_IP}.sslip.io"
     echo "  Pix3lBoard:   https://$BOARD_DOMAIN"
     echo "  Pix3lWiki:    https://$WIKI_DOMAIN"
     echo "  Pix3lPrompt:  https://$PROMPT_DOMAIN"
+    echo "  Pix3lMCP:     https://$MCP_DOMAIN"
     echo ""
     ;;
   *)
@@ -140,6 +143,15 @@ services:
       - "traefik.http.routers.prompt.middlewares=ratelimit"
       - "traefik.http.services.prompt.loadbalancer.server.port=3002"
 
+  pix3lmcp:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp.rule=Host(\`$MCP_DOMAIN\`)"
+      - "traefik.http.routers.mcp.entrypoints=websecure"
+      - "traefik.http.routers.mcp.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.mcp.middlewares=ratelimit"
+      - "traefik.http.services.mcp.loadbalancer.server.port=3010"
+
 volumes:
   letsencrypt:
 EOF
@@ -182,9 +194,13 @@ echo ""
 echo "  Pix3lBoard:   https://$BOARD_DOMAIN"
 echo "  Pix3lWiki:    https://$WIKI_DOMAIN"
 echo "  Pix3lPrompt:  https://$PROMPT_DOMAIN"
+echo "  Pix3lMCP:     https://$MCP_DOMAIN"
 echo ""
 echo "  Certificates will be issued automatically on first access."
 echo "  Watch Traefik logs: docker compose logs traefik -f"
+echo ""
+echo "  To register pix3lmcp in Claude Code:"
+echo "    claude mcp add --transport http pix3lboard -- https://$MCP_DOMAIN/mcp"
 echo ""
 echo "  Next step: protect the VPS with fail2ban:"
 echo "    sudo ./setup-fail2ban.sh"

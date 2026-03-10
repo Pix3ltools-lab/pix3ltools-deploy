@@ -49,6 +49,23 @@ services:
       - TURSO_AUTH_TOKEN=
       - JWT_SECRET=${JWT_SECRET}
 
+  pix3lmcp:
+    image: ghcr.io/pix3ltools-lab/pix3lmcp:latest
+    ports:
+      - "3010:3010"
+    depends_on:
+      - pix3lboard
+    environment:
+      - NODE_ENV=production
+      - PIX3LBOARD_URL=http://pix3lboard:3000
+      # Opzione 1 (preferita): API Key — decommentare quando pix3lboard la supporta via setup
+      # - PIX3LBOARD_API_KEY=${PIX3LBOARD_MCP_API_KEY}
+      # Opzione 2 (fallback): Email + Password
+      - PIX3LBOARD_EMAIL=${PIX3LBOARD_MCP_EMAIL}
+      - PIX3LBOARD_PASSWORD=${PIX3LBOARD_MCP_PASSWORD}
+      - WORKSPACE_IDS=${PIX3LBOARD_MCP_WORKSPACE_IDS}
+      - PORT=3010
+
   watchtower:
     image: containrrr/watchtower
     restart: unless-stopped

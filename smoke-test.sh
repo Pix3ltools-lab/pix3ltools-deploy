@@ -11,11 +11,11 @@
 # regression silently before users notice the broken cross-app link.
 #
 # Usage:
-#   ./smoke-test.sh [board_url]
+#   ./smoke-test.sh [board_url] [mcp_url]
 #
 # Examples:
-#   ./smoke-test.sh https://board.example.com
-#   ./smoke-test.sh http://localhost:3000
+#   ./smoke-test.sh https://board.example.com https://mcp.example.com
+#   ./smoke-test.sh http://localhost:3000 http://localhost:3010
 #
 
 set -euo pipefail
@@ -81,6 +81,20 @@ else
       check_fail "pix3lwikiUrl does not use HTTPS: $WIKI_URL"
     fi
   fi
+fi
+
+# --- Check pix3lmcp health ---
+MCP_BASE="${2:-http://localhost:3010}"
+echo ""
+echo "$(bold '=== Smoke test: pix3lmcp ===')"
+echo "  URL: $MCP_BASE"
+echo ""
+
+MCP_STATUS=$(curl -sf --max-time 5 -o /dev/null -w "%{http_code}" "$MCP_BASE/api/health" 2>/dev/null || echo "000")
+if [ "$MCP_STATUS" = "200" ]; then
+  check_pass "pix3lmcp /api/health → 200 OK"
+else
+  check_fail "pix3lmcp /api/health → $MCP_STATUS (expected 200)"
 fi
 
 # --- Summary ---

@@ -1,3 +1,4 @@
 .env
 improvement.md
+mcp_server.md
 docker-compose.override.yml
